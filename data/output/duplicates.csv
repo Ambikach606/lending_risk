@@ -1,2 +1,2 @@
 facility_id,customer_segment,metric,period_end,actual_value,threshold_value,source_updated_at,duplicate_reason
-F005,Corporate,PD,2026-09-30,3.1,3.0,2026-10-01T05:20:00Z,filtered by a newer source_updated_at for the same business key
+F005,Corporate,PD,2026-09-30,3.1,3.0,2026-10-01T05:20:00Z,Filtered by business key and latest update

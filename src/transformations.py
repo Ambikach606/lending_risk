@@ -246,8 +246,7 @@ def transform_data(raw_df):
         duplicate_output = duplicates.select(
             *raw_df.columns,
             F.lit(
-                "filtered by a newer source_updated_at "
-                "for the same business key"
+                "Filtered by business key and latest update"
             ).alias("duplicate_reason")
         )
 
