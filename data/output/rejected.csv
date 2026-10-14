@@ -1,3 +1,3 @@
 facility_id,customer_segment,metric,period_end,actual_value,threshold_value,source_updated_at,rejection_reason
-F003,SME,PD,2026-09-30,not_available,3.0,2026-10-01T05:10:00Z,invalid actual_value (must be a finite number); invalid or non-finite numeric value
+F003,SME,PD,2026-09-30,not_available,3.0,2026-10-01T05:10:00Z,invalid actual_value (must be a finite number)
 F004,,PD,2026-09-30,3.1,3.0,2026-10-01T05:15:00Z,missing customer_segment

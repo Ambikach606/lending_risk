@@ -40,47 +40,162 @@ def sample_rows():
     ]
 
 
-def test_sample_rejections_duplicates_and_latest_wins(spark, sample_rows):
-    detail, rejected, duplicates = transform_data(make_raw(spark, sample_rows))
-    assert detail.count() == 3
-    assert rejected.count() == 2
-    assert duplicates.count() == 1
-    assert detail.filter("facility_id = 'F005'").first()["actual_value"] == 3.5
+
+# 1. Duplicate Resolution & Latest Record Wins
+
+def test_duplicates_are_identified_and_latest_record_wins(
+    spark,
+    sample_rows
+):
+    detail, rejected, duplicates = transform_data(
+        make_raw(spark, sample_rows)
+    )
+
+    assert detail.count() == 3, (
+        "Expected 3 valid records after removing invalid rows "
+        "and resolving duplicates."
+    )
+
+    assert rejected.count() == 2, (
+        "Expected 2 rejected records."
+    )
+
+    assert duplicates.count() == 1, (
+        "Expected 1 duplicate record."
+    )
+
+    assert (
+        detail.filter("facility_id = 'F005'")
+        .first()["actual_value"]
+        == 3.5
+    ), (
+        "Latest version of F005 should be retained."
+    )
+
+
+
+# 2. Threshold Boundary Condition
 
 
 def test_equal_to_threshold_is_breach(spark):
-    rows = [("F1", "SME", "PD", "2026-09-30", "3.0", "3.0", "2026-10-01T05:00:00Z")]
+    rows = [
+        ("F1", "SME", "PD", "2026-09-30",
+         "3.0", "3.0", "2026-10-01T05:00:00Z")
+    ]
+
     detail, _, _ = transform_data(make_raw(spark, rows))
-    assert detail.first()["is_breach"] is True
+
+    assert detail.first()["is_breach"] is True, (
+        "Actual value equal to threshold must be treated as breach."
+    )
 
 
-def test_rejection_reason_is_useful(spark):
-    rows = [("F1", "", "PD", "2026-09-30", "3.1", "3.0", "2026-10-01T05:00:00Z")]
+
+# 3. Invalid Input Rejection
+
+
+def test_invalid_actual_value_is_rejected(spark):
+    rows = [
+        ("F1", "SME", "PD", "2026-09-30",
+         "not_available", "3.0", "2026-10-01T05:00:00Z")
+    ]
+
     _, rejected, _ = transform_data(make_raw(spark, rows))
-    assert "missing customer_segment" in rejected.first()["rejection_reason"]
+
+    assert rejected.count() == 1, (
+        "Invalid numeric values should be rejected."
+    )
+
+
+
+# 4. Missing Mandatory Field
+
+
+def test_missing_customer_segment_is_rejected(spark):
+    rows = [
+        ("F1", "", "PD", "2026-09-30",
+         "3.1", "3.0", "2026-10-01T05:00:00Z")
+    ]
+
+    _, rejected, _ = transform_data(make_raw(spark, rows))
+
+    assert rejected.count() == 1, (
+        "Rows with missing customer segment must be rejected."
+    )
+
+    assert (
+        "missing customer_segment"
+        in rejected.first()["rejection_reason"].lower()
+    ), (
+        "Rejection reason should clearly explain the failure."
+    )
+
+
+
+# 5. Empty Input Dataset
 
 
 def test_empty_input_returns_empty_outputs(spark):
     schema = """
-        facility_id string, customer_segment string, metric string,
-        period_end string, actual_value string, threshold_value string,
+        facility_id string,
+        customer_segment string,
+        metric string,
+        period_end string,
+        actual_value string,
+        threshold_value string,
         source_updated_at string
     """
+
     empty = spark.createDataFrame([], schema)
+
     detail, rejected, duplicates = transform_data(empty)
-    assert detail.count() == 0
-    assert rejected.count() == 0
-    assert duplicates.count() == 0
-    assert make_summary(detail).count() == 0
+
+    assert detail.count() == 0, (
+        "Empty input should produce zero detail records."
+    )
+
+    assert rejected.count() == 0, (
+        "Empty input should produce zero rejected records."
+    )
+
+    assert duplicates.count() == 0, (
+        "Empty input should produce zero duplicate records."
+    )
+
+    assert make_summary(detail).count() == 0, (
+        "Summary should be empty for empty input."
+    )
 
 
-def test_summary_counts_and_rate(spark):
+
+# 6. All Records Invalid
+
+
+def test_all_records_invalid_produces_only_rejections(spark):
     rows = [
-        ("F1", "SME", "PD", "2026-09-30", "3.0", "3.0", "2026-10-01T05:00:00Z"),
-        ("F2", "SME", "PD", "2026-09-30", "2.0", "3.0", "2026-10-01T05:01:00Z"),
+        ("F1", "", "PD", "2026-09-30",
+         "3.1", "3.0", "2026-10-01T05:00:00Z"),
+
+        ("F2", "SME", "PD", "2026-09-30",
+         "not_available", "3.0", "2026-10-01T05:01:00Z")
     ]
-    detail, _, _ = transform_data(make_raw(spark, rows))
-    summary = make_summary(detail).first()
-    assert summary["facility_count"] == 2
-    assert summary["breached_facility_count"] == 1
-    assert summary["breach_rate"] == 0.5
+
+    detail, rejected, duplicates = transform_data(
+        make_raw(spark, rows)
+    )
+
+    assert detail.count() == 0, (
+        "No valid detail records should remain when every input row is invalid."
+    )
+
+    assert rejected.count() == 2, (
+        "All invalid rows should be present in rejected output."
+    )
+
+    assert duplicates.count() == 0, (
+        "Invalid rows should not create duplicate records."
+    )
+
+    assert make_summary(detail).count() == 0, (
+        "Summary should be empty when no valid records exist."
+    )

@@ -1,0 +1,30 @@
+Raw Rows =
+CALCULATE(
+    COUNTROWS('raw'),
+    ALL('raw')
+)
+
+Superseded Rows =
+COUNTROWS('duplicates')
+
+Valid Facilities =
+DISTINCTCOUNT('detail'[facility_id])
+
+Breached Facilities =
+CALCULATE(
+    DISTINCTCOUNT('detail'[facility_id]),
+    'detail'[is_breach] = TRUE()
+)
+
+Breach Rate =
+DIVIDE(
+    [Breached Facilities],
+    [Valid Facilities],
+    0
+)
+
+Average Actual Value =
+AVERAGE('detail'[actual_value])
+
+Rejected Rows =
+COUNTROWS('rejected')
