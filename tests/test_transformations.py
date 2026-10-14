@@ -176,7 +176,7 @@ def test_all_records_invalid_produces_only_rejections(spark):
         ("F1", "", "PD", "2026-09-30",
          "3.1", "3.0", "2026-10-01T05:00:00Z"),
 
-        ("F2", "SME", "PD", "2026-09-30",
+        ("F2", "SME", "", "2026-09-30",
          "not_available", "3.0", "2026-10-01T05:01:00Z")
     ]
 
