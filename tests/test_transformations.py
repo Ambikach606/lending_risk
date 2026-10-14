@@ -199,3 +199,4 @@ def test_all_records_invalid_produces_only_rejections(spark):
     assert make_summary(detail).count() == 0, (
         "Summary should be empty when no valid records exist."
     )
+
