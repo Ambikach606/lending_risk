@@ -1,7 +1,3 @@
-from pyspark.sql import functions as F
-from pyspark.sql.window import Window
-
-
 REQUIRED_TEXT_COLUMNS = [
     "facility_id",
     "customer_segment",

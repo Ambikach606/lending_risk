@@ -229,8 +229,8 @@ lending_risk/
 │       └── summary.csv
 │
 ├── notebooks/
+│   ├── configs.ipynb
 │   └── lending_risk_pipeline.ipynb
-│
 ├── powerbi/
 │   ├── dax_measures.txt
 │   ├── mock_report.html
