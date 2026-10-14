@@ -200,3 +200,26 @@ def test_all_records_invalid_produces_only_rejections(spark):
         "Summary should be empty when no valid records exist."
     )
 
+# 7. Summary Business Calculations
+
+def test_summary_calculates_expected_business_figures(spark, sample_rows):
+    raw_df = make_raw(spark, sample_rows)
+    detail, _, _ = transform_data(raw_df)
+    summary = make_summary(detail).collect()
+
+    results = {row["customer_segment"]: row for row in summary}
+
+    # Corporate: 2 facilities, 1 breach, 50% breach rate, average 3.1
+    corporate = results["Corporate"]
+    assert corporate["facility_count"] == 2
+    assert corporate["breached_facility_count"] == 1
+    assert corporate["breach_rate"] == pytest.approx(0.5)
+    assert corporate["average_actual_value"] == pytest.approx(3.1)
+
+    # SME: 1 facility, 1 breach, 100% breach rate, average 3.2
+    sme = results["SME"]
+    assert sme["facility_count"] == 1
+    assert sme["breached_facility_count"] == 1
+    assert sme["breach_rate"] == pytest.approx(1.0)
+    assert sme["average_actual_value"] == pytest.approx(3.2)
+
